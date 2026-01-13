@@ -63,7 +63,7 @@ if note != '無資料':
     if fig_data.empty:
         st.markdown("### 無資料")
     else:
-        if fig_type == '長條圖':
+        if fig_type == '長條圖(依12/30盤點量)':
             fig = px.bar(fig_data, x='藥名', y=[r'12/30量', r'12/30電腦量'])
             fig.update_layout(
                     xaxis_tickangle=-45
