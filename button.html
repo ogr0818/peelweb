@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>疫苗分類查詢</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body { font-family: system-ui, -apple-system, "Noto Sans TC", Arial; padding: 16px; }
+    .row { margin: 12px 0; }
+    .btns { display: flex; flex-wrap: wrap; gap: 8px; }
+    button { padding: 8px 12px; border: 1px solid #ccc; background: #fff; border-radius: 8px; cursor: pointer; }
+    button.active { border-color: #222; font-weight: 700; }
+    .hint { color: #666; margin-top: 6px; }
+    .summary { margin: 10px 0; color:#555; }
+    ul { margin-top: 10px; }
+    li { margin: 6px 0; }
+  </style>
+</head>
+
+<body>
+  <h1>疫苗商品名稱篩選</h1>
+
+  <div class="row">
+    <div><strong>步驟 1：選擇分類</strong></div>
+    <div id="categoryBtns" class="btns"></div>
+    <div id="selectedCategory" class="hint">尚未選擇分類</div>
+  </div>
+
+  <div class="row">
+    <div><strong>步驟 2：選擇疫苗型別</strong></div>
+    <div class="btns">
+      <button id="btnSelfPay" disabled>自費</button>
+      <button id="btnNotSelfPay" disabled>不是自費</button>
+    </div>
+    <div class="hint">提示：請先選分類，上方兩個按鈕才會啟用。</div>
+  </div>
+
+  <div id="summary" class="summary"></div>
+  <ul id="list"></ul>
+
+  <script type="module">
+    const $ = (s) => document.querySelector(s);
+    const categoryBtnsEl = $("#categoryBtns");
+    const selectedCategoryEl = $("#selectedCategory");
+    const btnSelfPay = $("#btnSelfPay");
+    const btnNotSelfPay = $("#btnNotSelfPay");
+    const summaryEl = $("#summary");
+    const listEl = $("#list");
+
+    const res = await fetch("./data.json", { cache: "no-store" });
+    if (!res.ok) throw new Error("無法載入 data.json，請確認檔案與路徑。");
+    const data = await res.json();
+
+    // 取出所有分類（去重、排序）
+    const categories = [...new Set(
+      data.map(r => (r?.["分類"] ?? "").toString().trim()).filter(Boolean)
+    )].sort((a, b) => a.localeCompare(b, "zh-Hant"));
+
+    // 狀態：目前選到的分類
+    let currentCategory = null;
+
+    function escapeHtml(str) {
+      return str
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function setCategory(cat) {
+      currentCategory = cat;
+      selectedCategoryEl.textContent = `目前分類：${cat}`;
+      btnSelfPay.disabled = false;
+      btnNotSelfPay.disabled = false;
+
+      // 類別按鈕 active 樣式
+      [...categoryBtnsEl.querySelectorAll("button")].forEach(b => {
+        b.classList.toggle("active", b.dataset.cat === cat);
+      });
+
+      // 選分類後先清空輸出，避免顯示舊結果
+      summaryEl.textContent = "";
+      listEl.innerHTML = "";
+    }
+
+    function renderNames(rows, label) {
+      const names = [...new Set(
+        rows
+          .map(r => (r?.["商品名稱"] ?? "").toString().trim())
+          .filter(Boolean)
+      )].sort((a, b) => a.localeCompare(b, "zh-Hant"));
+
+      summaryEl.textContent = `${label}｜分類：${currentCategory}｜共 ${names.length} 項`;
+      listEl.innerHTML = names.map(n => `<li>${escapeHtml(n)}</li>`).join("");
+    }
+
+    function filterAndRender(typeMode) {
+      if (!currentCategory) return;
+
+      const rowsInCategory = data.filter(r =>
+        (r?.["分類"] ?? "").toString().trim() === currentCategory
+      );
+
+      let filtered;
+      if (typeMode === "selfpay") {
+        filtered = rowsInCategory.filter(r =>
+          (r?.["疫苗型別"] ?? "").toString().trim() === "自費"
+        );
+        renderNames(filtered, "自費");
+      } else {
+        filtered = rowsInCategory.filter(r =>
+          (r?.["疫苗型別"] ?? "").toString().trim() !== "自費"
+        );
+        renderNames(filtered, "不是自費");
+      }
+    }
+
+    // 生成分類 buttons
+    categoryBtnsEl.innerHTML = categories
+      .map(cat => `<button type="button" data-cat="${escapeHtml(cat)}">${escapeHtml(cat)}</button>`)
+      .join("");
+
+    categoryBtnsEl.addEventListener("click", (e) => {
+      const btn = e.target.closest("button[data-cat]");
+      if (!btn) return;
+      setCategory(btn.dataset.cat);
+    });
+
+    btnSelfPay.addEventListener("click", () => filterAndRender("selfpay"));
+    btnNotSelfPay.addEventListener("click", () => filterAndRender("notselfpay"));
+  </script>
+</body>
+</html>

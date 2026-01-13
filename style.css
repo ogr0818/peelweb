@@ -1,3 +1,15 @@
-body{
+body {
     background-color: lightblue;
+}
+
+.hint {
+    color: brown;
+}
+
+button {
+    font-size: 36px;
+}
+
+li {
+    font-size: x-large;
 }

@@ -8,5 +8,24 @@
 </head>
 <body>
     <h1>歡迎來到 GitHub Pages!</h1>
+
+
+    <label>
+        輸入藥品代碼（例：FLU18I）
+        <div>
+        <input id="code" type="text" autocomplete="off" placeholder="例如：FLU18I" />
+        <button id="btn">查詢</button>
+        </div>
+    </label>
+    
+    <div id="output"></div>
+    
+    <script type="module">
+        // 1) 載入 JSON（GitHub Pages 上建議用 fetch，最相容）
+        const res = await fetch("./data.json", { cache: "no-store" });
+        if (!res.ok) throw new Error("無法載入 data.json，請確認檔案路徑與 GitHub Pages 是否部署成功。");
+        const data = await res.json(); // data 是陣列：[{藥品代碼:..., 商品名稱:...}, ...]
+    </script>
+
 </body>
 </html>
