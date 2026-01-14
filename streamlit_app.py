@@ -80,3 +80,46 @@ if note != '無資料':
                 st.markdown("### 無資料")
 else:
     st.title(note)
+st.divider()
+st.markdown(f'<h2 style="color:#0000CD;">調撥整理</h>', unsafe_allow_html=True)
+allocate = pd.read_excel('./static/allocate.xlsx', engine="openpyxl")
+allocate['formula'] = allocate['藥品代碼'].str[-1]
+formula = st.radio("劑型： ", ["口服", "針劑", "其他"], index=0, horizontal=True)
+if formula == "口服":
+    allocate_type = allocate.query("formula == 'O'")
+elif formula == "針劑":
+    allocate_type = allocate.query("formula == 'I'")
+else:
+    allocate_type = allocate.query("formula != 'I' and formula != 'O'")
+allocate_type_over = allocate_type.query('調撥總計 > 0')
+sel = allocate_type_over['備註'].unique()
+alloc_note = st.multiselect("可能因素： ", sel, default=sel[1])
+values = st.slider("調撥總次數範圍： ", 0, 50, (7, 7))
+
+allocate_type_ = allocate_type_over.query(f'調撥總計 >= {int(values[0])} & 調撥總計 <= {int(values[1])}')
+fig_alloc = allocate_type_[allocate_type_['備註'].isin(alloc_note)]
+data_alloc = fig_alloc[['藥品名稱', '1月', '2月', '3月', '4月', 
+                        '5月', '6月', '7月', '8月', '9月',
+                        '10月', '11月', '12月','備註']]
+alloc_melt = data_alloc.melt(id_vars=['藥品名稱', '備註'], 
+                          var_name='月份', 
+                          value_name='次數')
+
+alloc_scatter_3d = px.scatter_3d(
+    alloc_melt, 
+    x='藥品名稱', 
+    y='月份', 
+    z='次數', 
+    color='次數',           # 顏色隨次數變化
+    hover_data=['備註'],    # 懸停顯示備註
+    opacity=0.7,           # 調整透明度增加重疊時的可視度
+    height=700             # 調整圖表高度
+)
+
+# 2. 優化佈局 (避免 X 軸標籤擁擠)
+alloc_scatter_3d.update_layout(scene=dict(
+    xaxis_title='藥品名稱',
+    yaxis_title='月份',
+    zaxis_title='次數'
+))
+st.plotly_chart(alloc_scatter_3d, use_container_width=True)
