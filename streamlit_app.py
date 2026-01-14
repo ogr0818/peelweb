@@ -84,7 +84,7 @@ st.divider()
 st.markdown(f'<h2 style="color:#0000CD;">調撥整理</h>', unsafe_allow_html=True)
 allocate = pd.read_excel('./static/allocate.xlsx', engine="openpyxl")
 allocate['formula'] = allocate['藥品代碼'].str[-1]
-formula = st.radio("劑型： ", ["口服", "針劑", "其他"], index=0, horizontal=True)
+formula = st.radio("劑型： ", ["口服", "針劑", "其他"], index=2, horizontal=True)
 if formula == "口服":
     allocate_type = allocate.query("formula == 'O'")
 elif formula == "針劑":
